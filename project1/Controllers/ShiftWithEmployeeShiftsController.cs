@@ -26,11 +26,12 @@ namespace project1.Controllers
         }
 
         // POST: api/ShiftWithEmployeeShifts
-        public void Post([FromBody] ShiftWithEmployeeShifts shiftWithEmployeeShifts)
+        public string Post([FromBody] ShiftWithEmployeeShifts shiftWithEmployeeShifts)
         {
            
-                // Call the BL function to add shift with employee shifts
+            
            bl.AddShiftWithEmployeeShifts(shiftWithEmployeeShifts);
+            return "Added";
          
         }
 

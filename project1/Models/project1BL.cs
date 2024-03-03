@@ -13,7 +13,7 @@ namespace project1.Models
         ProjectDBEntities Db = new ProjectDBEntities();
         public project1BL()
         {
-            // Disable lazy loading for the DbContext
+            
             Db.Configuration.LazyLoadingEnabled = false;
             Db.Configuration.ProxyCreationEnabled = false;
 
@@ -50,14 +50,51 @@ namespace project1.Models
 
 
         }
-        public void DeleteEmployee(int id)
+        public void DeleteEmployee(int employeeId)
         {
-            var currentEmp = Db.Employees.Where(x => x.ID == id).First();
-            Db.Employees.Remove(currentEmp);
-            Db.SaveChanges();
+            try
+            {
+                using (var dbContext = new ProjectDBEntities())
+                {
+                    var employee = dbContext.Employees.Find(employeeId);
+                    if (employee == null)
+                    {
+                        throw new Exception("Employee not found");
+                    }
 
+                 
+                    var employeeShifts = dbContext.EmployeeShifts.Where(es => es.EmployeeID == employeeId);
 
+                   
+                    foreach (var employeeShift in employeeShifts)
+                    {
+                        dbContext.EmployeeShifts.Remove(employeeShift);
+                    }
+
+                    var affectedDepartments = dbContext.Departments.Where(d => d.Manager == employeeId);
+
+                    
+                    foreach (var department in affectedDepartments)
+                    {
+                        department.Manager = null;
+                    }
+
+                    
+                    dbContext.Employees.Remove(employee);
+
+                    
+                    dbContext.SaveChanges();
+                }
+            }
+            catch (Exception ex)
+            {
+               
+                Console.WriteLine($"Error deleting employee with ID {employeeId}: {ex.Message}");
+                throw; 
+            }
         }
+
+
         public List<Department> GetALLDepartments()
         {
             return Db.Departments.ToList();
@@ -68,7 +105,7 @@ namespace project1.Models
         {
             return Db.Departments.Where(x => x.ID == id).First();
         }
-        
+
 
         public void AddDepartment(Department dep)
         {
@@ -82,8 +119,6 @@ namespace project1.Models
                 Console.WriteLine("DbUpdateException: " + ex.Message);
                 Console.WriteLine("StackTrace: " + ex.StackTrace);
 
-                // Log the details or handle the exception as needed
-                // You may want to use a proper logging framework (e.g., Serilog, NLog) to log the exception to a file or database
 
                 throw new Exception("Failed to add department. Please check the server logs for more details.");
             }
@@ -96,11 +131,11 @@ namespace project1.Models
 
                 if (currentDep != null)
                 {
-                    // Update department details
+                    
                     currentDep.Name = dep.Name;
 
-                    // Only update the manager if it's included in the update data
-                    if (dep.Manager != 0) // Assuming 0 is not a valid manager ID
+                   
+                    if (dep.Manager != 0) 
                     {
                         currentDep.Manager = dep.Manager;
                     }
@@ -111,7 +146,7 @@ namespace project1.Models
             }
             catch (Exception ex)
             {
-                // Log or handle the exception
+             
                 Console.WriteLine($"Error updating department with ID {id}: {ex.Message}");
                 throw;
             }
@@ -141,11 +176,24 @@ namespace project1.Models
         }
         public string AddShift(Shift shift)
         {
-            shift.ID = GetNextAvailableId();
-            Db.Shifts.Add(shift);
-            Db.SaveChanges();
-            return "Added";
+            try
+            {
+                // Add the shift to the database
+                shift.ID = GetNextAvailableId();
+                Db.Shifts.Add(shift);
+                Db.SaveChanges();
+
+
+                Db.SaveChanges();
+
+                return "Added";
+            }
+            catch (Exception ex)
+            {
+                return $"Error: {ex.Message}";
+            }
         }
+
 
         public string RemoveShift(int id)
         {
@@ -165,7 +213,19 @@ namespace project1.Models
         }
         public EmployeeShift GetEmployeeShift(int id)
         {
-            return Db.EmployeeShifts.FirstOrDefault(x=>x.ID==id);
+            return Db.EmployeeShifts.FirstOrDefault(x => x.ID == id);
+        }
+        public string removeEmployeeshift(int id)
+        {
+            EmployeeShift p = Db.EmployeeShifts.Where(x => x.ID == id).First();
+            if (p != null)
+            {
+                Db.EmployeeShifts.Remove(p);
+                Db.SaveChanges();
+            }
+
+            return "Deleted";
+
         }
         public bool Login(string Username, string Password)
         {
@@ -218,48 +278,56 @@ namespace project1.Models
         {
             try
             {
-                // Create a new Shift entity
-                var newShift = new Shift
+                using (var context = new ProjectDBEntities()) 
                 {
-                    Date = shiftWithEmployeeShifts.Date,
-                    Start_Time = shiftWithEmployeeShifts.StartTime,
-                    End_Time = shiftWithEmployeeShifts.EndTime
-                    // Add other properties as needed
-                };
-
-                // Add the new shift to the Shifts table
-                Db.Shifts.Add(newShift);
-                Db.SaveChanges();
-
-                // Get the ID of the newly added shift
-                int newShiftId = newShift.ID;
-
-                // Add employee shifts associated with the new shift
-                foreach (var employeeShiftViewModel in shiftWithEmployeeShifts.EmployeeShifts)
-                {
-                    var newEmployeeShift = new EmployeeShift
+                  
+                    var newShift = new Shift
                     {
-                        ShiftID = newShiftId,
-                        EmployeeID = employeeShiftViewModel.EmployeeID
-                        // Add other properties as needed
+                        Date = shiftWithEmployeeShifts.Date,
+                        Start_Time = shiftWithEmployeeShifts.StartTime,
+                        End_Time = shiftWithEmployeeShifts.EndTime
+                        
                     };
 
-                    Db.EmployeeShifts.Add(newEmployeeShift);
-                }
+                    context.Shifts.Add(newShift);
+                    context.SaveChanges();
 
-                Db.SaveChanges();
+                  
+                    int newShiftId = newShift.ID;
+
+                  
+                    foreach (int employeeId in shiftWithEmployeeShifts.EmployeeShifts.Select(e => e.EmployeeID))
+                    {
+                        
+                        var newEmployeeShift = new EmployeeShift
+                        {
+                            ShiftID = newShiftId,
+                            EmployeeID = employeeId,
+                           
+                        };
+
+                      
+                        context.EmployeeShifts.Add(newEmployeeShift);
+                    }
+
+                    
+                    context.SaveChanges();
+                }
 
                 return "Added";
             }
             catch (Exception ex)
             {
-                // Log or handle the exception
+               
                 Console.WriteLine($"Error adding shift with employee shifts: {ex.Message}");
                 return "Failed to add shift with employee shifts. Please check the server logs for more details.";
             }
         }
 
+        public List<User> getallusers()
+        {
 
-
+            return Db.Users.ToList();
+        }
     }
 }

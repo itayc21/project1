@@ -10,38 +10,35 @@ using System.Web.Http.Cors;
 namespace project1.Controllers
 {
     [EnableCors(origins: "*", headers: "*", methods: "*")]
-    public class EmployeeshiftCon : ApiController
+    public class UsersController : ApiController
 
     {
         private static project1BL bl = new project1BL();
 
-        // GET: api/Employeeshiftcon
-        public IEnumerable<EmployeeShift> Get()
+        // GET: api/Users
+        public IEnumerable<User> Get()
         {
-            return bl.GetAllEmployeeShifts();
+            return bl.getallusers();
+        }
+        // GET: api/Users/5
+        public string Get(int id)
+        {
+            return "value";
         }
 
-        // GET: api/Employeeshiftcon/5
-        public EmployeeShift Get(int id)
-        {
-            return bl.GetEmployeeShift(id);
-        }
-
-        // POST: api/Employeeshiftcon
+        // POST: api/Users
         public void Post([FromBody]string value)
         {
         }
 
-        // PUT: api/Employeeshiftcon/5
+        // PUT: api/Users/5
         public void Put(int id, [FromBody]string value)
         {
         }
 
-        // DELETE: api/Employeeshiftcon/5
-        public string Delete(int id)
+        // DELETE: api/Users/5
+        public void Delete(int id)
         {
-            return bl.removeEmployeeshift(id);
-
         }
     }
 }

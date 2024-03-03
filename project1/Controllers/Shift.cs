@@ -30,14 +30,13 @@ namespace project1.Controllers
         // POST: api/Shift
         public string Post(Shift shift)
         {
-           return bl.AddShift(shift); // Removed unnecessary type specification
-            
+           return bl.AddShift(shift); 
         }
 
         // PUT: api/Shift/5
         public void Put(int id, [FromBody] string value)
         {
-            // Implementation for updating a shift (not currently implemented in your code)
+            
         }
 
         // DELETE: api/Shift/5
